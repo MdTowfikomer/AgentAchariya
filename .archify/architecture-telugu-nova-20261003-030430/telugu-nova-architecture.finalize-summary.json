@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "ok": false,
+  "command": "finalize",
+  "status": "fail",
+  "type": "architecture",
+  "quality": "showcase",
+  "specification": {
+    "path": "D:\\Programming\\CascadeProjects\\GDG-Deepmind-Hackathon\\Telugu-Nova\\.archify\\architecture-telugu-nova-20261003-030430\\candidate.json",
+    "sha256": "92997853fe73b8377bb5827d913309fc0e37c893ceb89c48938ce56c2af2c882",
+    "bytes": 6047
+  },
+  "artifact": {
+    "path": "D:\\Programming\\CascadeProjects\\GDG-Deepmind-Hackathon\\Telugu-Nova\\.archify\\architecture-telugu-nova-20261003-030430\\telugu-nova-architecture.html",
+    "sha256": "f3ea07a24c16cbf2e6f1e473b74a4ffefb4aa6a476b8d33acf6a0429fdcb1387",
+    "bytes": 764609
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "fail"
+  },
+  "failedStage": "browser-check",
+  "diagnostics": [
+    {
+      "code": "viewer/evidence-path-conflict",
+      "severity": "error",
+      "message": "browser-check will not replace the existing unowned evidence path \"D:\\Programming\\CascadeProjects\\GDG-Deepmind-Hackathon\\Telugu-Nova\\.archify\\architecture-telugu-nova-20261003-030430\\telugu-nova-architecture.browser-check.json\".",
+      "subject": {
+        "artifact": "D:\\Programming\\CascadeProjects\\GDG-Deepmind-Hackathon\\Telugu-Nova\\.archify\\architecture-telugu-nova-20261003-030430\\telugu-nova-architecture.html",
+        "evidencePath": "D:\\Programming\\CascadeProjects\\GDG-Deepmind-Hackathon\\Telugu-Nova\\.archify\\architecture-telugu-nova-20261003-030430\\telugu-nova-architecture.browser-check.json"
+      },
+      "evidence": {
+        "reason": {
+          "code": "ownership-artifact-mismatch"
+        }
+      },
+      "supportedFixes": [
+        "move the conflicting file aside, or choose a separate --out-dir, then rerun browser-check"
+      ]
+    }
+  ],
+  "diagnosticSummary": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "D:\\Programming\\CascadeProjects\\GDG-Deepmind-Hackathon\\Telugu-Nova\\.archify\\architecture-telugu-nova-20261003-030430\\telugu-nova-architecture.finalize.json",
+    "summaryReceipt": "D:\\Programming\\CascadeProjects\\GDG-Deepmind-Hackathon\\Telugu-Nova\\.archify\\architecture-telugu-nova-20261003-030430\\telugu-nova-architecture.finalize-summary.json",
+    "browserCheckReceipt": "D:\\Programming\\CascadeProjects\\GDG-Deepmind-Hackathon\\Telugu-Nova\\.archify\\architecture-telugu-nova-20261003-030430\\telugu-nova-architecture.browser-check.json"
+  },
+  "update": {
+    "status": "current",
+    "installedVersion": "3.0.1",
+    "availableVersion": "3.0.1",
+    "releaseNotes": null,
+    "checkedAt": "2026-10-02T21:34:20.283Z",
+    "source": "cache",
+    "noticeRequired": false,
+    "noticeText": null
+  },
+  "visualReview": "not-requested",
+  "durationMs": 2445
+}

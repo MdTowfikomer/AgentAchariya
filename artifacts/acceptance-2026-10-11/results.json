@@ -1,0 +1,129 @@
+{
+  "scope": "Production components in real Chrome; LiveKit transport stubbed. Actual app landing page also checked. No microphone/LLM assessment.",
+  "results": [
+    {
+      "name": "Running application loads",
+      "pass": true,
+      "details": ""
+    },
+    {
+      "name": "Application mobile page has no horizontal overflow",
+      "pass": true,
+      "details": ""
+    },
+    {
+      "name": "Application has no uncaught browser errors",
+      "pass": true,
+      "details": ""
+    },
+    {
+      "name": "Archived notes restored in browser",
+      "pass": true,
+      "details": ""
+    },
+    {
+      "name": "No generic empty explanation placeholders",
+      "pass": true,
+      "details": ""
+    },
+    {
+      "name": "Roadmap navigation scrolls to selected concept",
+      "pass": true,
+      "details": "16 -> 105"
+    },
+    {
+      "name": "Wrong chip gets incorrect result",
+      "pass": true,
+      "details": ""
+    },
+    {
+      "name": "Chip sends checkpoint and stable option IDs",
+      "pass": true,
+      "details": "{\"type\":\"checkpoint_response\",\"checkpointId\":\"cp-sugar\",\"conceptId\":\"sugar\",\"board\":\"b1\",\"modality\":\"chip\",\"optionId\":\"roots\",\"response\":\"Roots\",\"topic\":\"nova-board-student\"}"
+    },
+    {
+      "name": "Clicking chip does not draw on canvas",
+      "pass": true,
+      "details": ""
+    },
+    {
+      "name": "Hint appears for incorrect answer",
+      "pass": true,
+      "details": ""
+    },
+    {
+      "name": "Hint remains available after retry",
+      "pass": false,
+      "details": ""
+    },
+    {
+      "name": "Typed answer reaches transport",
+      "pass": true,
+      "details": "{\"type\":\"checkpoint_response\",\"checkpointId\":\"cp-sugar\",\"conceptId\":\"sugar\",\"board\":\"b1\",\"modality\":\"typed\",\"response\":\"Chlorophyll\",\"topic\":\"nova-board-student\"}"
+    },
+    {
+      "name": "Backend feedback is displayed",
+      "pass": true,
+      "details": ""
+    },
+    {
+      "name": "Interim speech is not submitted",
+      "pass": true,
+      "details": ""
+    },
+    {
+      "name": "Final speech submitted once",
+      "pass": true,
+      "details": ""
+    },
+    {
+      "name": "Production PDF export downloads",
+      "pass": false,
+      "details": "Failed to export slide 1. Export cancelled."
+    },
+    {
+      "name": "Mobile document has no horizontal overflow",
+      "pass": true,
+      "details": ""
+    },
+    {
+      "name": "Reserved footer does not cover board viewport",
+      "pass": true,
+      "details": ""
+    },
+    {
+      "name": "Image rejection works with default pen tool",
+      "pass": false,
+      "details": ""
+    },
+    {
+      "name": "Image rejection hides media with hand tool",
+      "pass": true,
+      "details": ""
+    },
+    {
+      "name": "Rejection reports owning concept",
+      "pass": true,
+      "details": ""
+    },
+    {
+      "name": "Newly saved notes survive reload",
+      "pass": false,
+      "details": "locator.waitFor: Timeout 4000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByText(/REOPENED_NOTE_UNIQUE/).first() to be visible\u001b[22m\n"
+    },
+    {
+      "name": "Image rejection survives archive reload",
+      "pass": true,
+      "details": ""
+    },
+    {
+      "name": "Fixture browser has no uncaught errors",
+      "pass": true,
+      "details": ""
+    }
+  ],
+  "errors": [],
+  "dialogs": [
+    "Failed to export slide 1. Export cancelled."
+  ]
+}

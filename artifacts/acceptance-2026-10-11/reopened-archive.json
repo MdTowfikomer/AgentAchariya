@@ -1,0 +1,141 @@
+{
+  "book": {
+    "pages": {
+      "b1": {
+        "title": "Photosynthesis acceptance lesson",
+        "steps": [
+          {
+            "id": "water",
+            "conceptId": "water",
+            "title": "Water uptake",
+            "say": "WATER_NOTE_UNIQUE: Water enters through the roots and travels to the leaves.",
+            "elements": [
+              {
+                "id": "water-diagram",
+                "kind": "diagram",
+                "layout": "flow",
+                "nodes": [
+                  {
+                    "id": "roots",
+                    "label": "Roots"
+                  },
+                  {
+                    "id": "stem",
+                    "label": "Stem"
+                  },
+                  {
+                    "id": "leaves",
+                    "label": "Leaves"
+                  }
+                ],
+                "edges": [
+                  {
+                    "from": "roots",
+                    "to": "stem",
+                    "label": "water"
+                  },
+                  {
+                    "from": "stem",
+                    "to": "leaves",
+                    "label": "water"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "light",
+            "conceptId": "light",
+            "title": "Capturing light",
+            "say": "LIGHT_NOTE_UNIQUE: Chlorophyll absorbs light. మొక్కలు సూర్యకాంతిని ఉపయోగిస్తాయి. पौधे सूर्य के प्रकाश का उपयोग करते हैं।",
+            "elements": [
+              {
+                "id": "light-diagram",
+                "kind": "diagram",
+                "layout": "flow",
+                "nodes": [
+                  {
+                    "id": "sun",
+                    "label": "Sunlight"
+                  },
+                  {
+                    "id": "chlorophyll",
+                    "label": "Chlorophyll"
+                  }
+                ],
+                "edges": [
+                  {
+                    "from": "sun",
+                    "to": "chlorophyll",
+                    "label": "light energy"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "sugar",
+            "conceptId": "sugar",
+            "title": "Making sugar",
+            "say": "SUGAR_NOTE_UNIQUE: The plant uses light energy to make sugars. Explain the role of the leaf in your own words.",
+            "elements": [
+              {
+                "id": "sugar-diagram",
+                "kind": "diagram",
+                "layout": "flow",
+                "nodes": [
+                  {
+                    "id": "co2",
+                    "label": "Carbon dioxide"
+                  },
+                  {
+                    "id": "sugar",
+                    "label": "Sugar"
+                  }
+                ],
+                "edges": [
+                  {
+                    "from": "co2",
+                    "to": "sugar",
+                    "label": "carbon fixation"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "revealed": 3,
+        "planning": null,
+        "annots": [],
+        "pointAt": null,
+        "pointSeq": 0,
+        "seq": 2,
+        "stepNotes": {
+          "water": "WATER_NOTE_UNIQUE: Water enters through the roots and travels to the leaves.",
+          "light": "LIGHT_NOTE_UNIQUE: Chlorophyll absorbs light. మొక్కలు సూర్యకాంతిని ఉపయోగిస్తాయి. पौधे सूर्य के प्रकाश का उपयोग करते हैं।",
+          "sugar": "SUGAR_NOTE_UNIQUE: The plant uses light energy to make sugars. Explain the role of the leaf in your own words."
+        },
+        "rejectedMedia": [
+          "acceptance-image"
+        ],
+        "images": [
+          {
+            "element": {
+              "id": "acceptance-image",
+              "kind": "media",
+              "media": "image",
+              "image_role": "primary",
+              "caption": "Supplementary leaf illustration"
+            },
+            "after": "sugar-diagram"
+          }
+        ]
+      }
+    },
+    "order": [
+      "b1"
+    ],
+    "active": "b1"
+  },
+  "research": []
+}

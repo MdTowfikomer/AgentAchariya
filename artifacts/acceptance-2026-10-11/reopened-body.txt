@@ -1,0 +1,40 @@
+1 Photosynthesis acceptance lesson
++
+ROADMAP:
+✓
+Water uptake
+✓
+Capturing light
+3
+Making sugar
+Acharya: Listening
+Water uptake
+Capturing light
+Making sugar
+📘 ACHARYA'S NOTE
+WATER UPTAKE
+WATER_NOTE_UNIQUE: Water enters through the roots and travels to the leaves.
+📘 ACHARYA'S NOTE
+CAPTURING LIGHT
+LIGHT_NOTE_UNIQUE: Chlorophyll absorbs light. మొక్కలు సూర్యకాంతిని ఉపయోగిస్తాయి. पौधे सूर्य के प्रकाश का उपयोग करते हैं।
+👂 LISTENING
+MAKING SUGAR
+SUGAR_NOTE_UNIQUE: The plant uses light energy to make sugars. Explain the role of the leaf in your own words.
+👂 LISTENING
+EXPLANATION
+SUGAR_NOTE_UNIQUE: The plant uses light energy to make sugars. Explain the role of the leaf in your own words.
+water
+water
+Roots
+Stem
+Leaves
+light energy
+Sunlight
+Chlorophyll
+carbon fixation
+Carbon dioxide
+Sugar
+🔬
+Supplementary leaf illustration
+Illustration hidden by student · Concept structure and notes displayed
+Reserved footer fixture · Audio transport simulated · No live voice session

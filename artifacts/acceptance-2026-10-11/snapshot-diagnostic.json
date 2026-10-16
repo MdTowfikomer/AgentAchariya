@@ -1,0 +1,7 @@
+{
+  "fullSucceeded": false,
+  "svgOnlySucceeded": true,
+  "errors": [
+    "SecurityError: Failed to execute 'toDataURL' on 'HTMLCanvasElement': Tainted canvases may not be exported."
+  ]
+}

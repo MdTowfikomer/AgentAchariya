@@ -1,0 +1,209 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Agent Acharya / Telugu-Nova System Architecture",
+    "output": ".archify/architecture-telugu-nova-20261003-030430/telugu-nova-architecture.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/mailech/GDG-Deepmind-Hackathon.git",
+      "revision": "55c2b01924f8b5be72ff6e95444a23d09ea23094"
+    }
+  },
+  "components": [
+    {
+      "id": "student",
+      "type": "external",
+      "label": "Student",
+      "sublabel": "Voice, Ink & Pointer",
+      "pos": [40, 260],
+      "size": [130, 60]
+    },
+    {
+      "id": "frontend",
+      "type": "frontend",
+      "label": "Next.js Web Client",
+      "sublabel": "Miro Canvas + Dock",
+      "pos": [260, 260],
+      "size": [150, 60],
+      "sources": [
+        { "path": "Telugu-Nova/frontend/components/nova/nova-view.tsx", "line": 600, "end_line": 640, "label": "Canvas & Dock" }
+      ]
+    },
+    {
+      "id": "livekit",
+      "type": "cloud",
+      "label": "LiveKit Cloud",
+      "sublabel": "WebRTC SFU Transport",
+      "pos": [510, 260],
+      "size": [150, 60],
+      "sources": [
+        { "path": "Telugu-Nova/frontend/app/api/token/route.ts", "line": 20, "end_line": 65, "label": "Token Minting" }
+      ]
+    },
+    {
+      "id": "agent",
+      "type": "backend",
+      "label": "Acharya Agent Worker",
+      "sublabel": "LiveKit Agents Runtime",
+      "pos": [770, 260],
+      "size": [160, 60],
+      "sources": [
+        { "path": "Telugu-Nova/backend/src/agent.py", "line": 20, "end_line": 45, "label": "Worker Process" }
+      ]
+    },
+    {
+      "id": "gemini",
+      "type": "cloud",
+      "label": "Gemini 3.8 Live",
+      "sublabel": "Multimodal Live API",
+      "pos": [1060, 260],
+      "size": [150, 60],
+      "sources": [
+        { "path": "Telugu-Nova/backend/src/board_session.py", "line": 45, "end_line": 75, "label": "Live Audio Session" }
+      ]
+    },
+    {
+      "id": "board_engine",
+      "type": "backend",
+      "label": "Whiteboard Engine",
+      "sublabel": "SVG Layout & Reducer",
+      "pos": [770, 110],
+      "size": [160, 60],
+      "sources": [
+        { "path": "Telugu-Nova/backend/src/board_session.py", "line": 25, "end_line": 65, "label": "Board State Machine" }
+      ]
+    },
+    {
+      "id": "postgres",
+      "type": "database",
+      "label": "PostgreSQL (Neon)",
+      "sublabel": "Student Metrics & History",
+      "pos": [1060, 110],
+      "size": [150, 60],
+      "sources": [
+        { "path": "Telugu-Nova/backend/src/analytics.py", "line": 20, "end_line": 55, "label": "Analytics Pool" }
+      ]
+    },
+    {
+      "id": "visuals",
+      "type": "backend",
+      "label": "Visual Director",
+      "sublabel": "SVG Schematics Engine",
+      "pos": [770, 420],
+      "size": [160, 60],
+      "sources": [
+        { "path": "Telugu-Nova/backend/src/visuals.py", "line": 30, "end_line": 70, "label": "Visual Director" }
+      ]
+    },
+    {
+      "id": "tavily",
+      "type": "cloud",
+      "label": "Tavily Search API",
+      "sublabel": "Real-time Knowledge",
+      "pos": [510, 420],
+      "size": [150, 60],
+      "sources": [
+        { "path": "Telugu-Nova/backend/src/research.py", "line": 20, "end_line": 55, "label": "Web Research" }
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "security-group",
+      "label": "Acharya Backend Agent Process",
+      "wraps": ["agent", "board_engine", "visuals"]
+    }
+  ],
+  "connections": [
+    {
+      "id": "student-frontend",
+      "from": "student",
+      "to": "frontend",
+      "label": "Audio & Ink",
+      "variant": "emphasis"
+    },
+    {
+      "id": "frontend-livekit",
+      "from": "frontend",
+      "to": "livekit",
+      "label": "WebRTC / RTC",
+      "variant": "emphasis"
+    },
+    {
+      "id": "livekit-agent",
+      "from": "livekit",
+      "to": "agent",
+      "label": "Room Dispatch",
+      "variant": "emphasis"
+    },
+    {
+      "id": "agent-gemini",
+      "from": "agent",
+      "to": "gemini",
+      "label": "Bi-directional Live",
+      "variant": "emphasis"
+    },
+    {
+      "id": "agent-board",
+      "from": "agent",
+      "to": "board_engine",
+      "label": "Step & Marks",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "board-postgres",
+      "from": "board_engine",
+      "to": "postgres",
+      "label": "Async Log",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "agent-visuals",
+      "from": "agent",
+      "to": "visuals",
+      "label": "Direct SVG Plan",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "agent-tavily",
+      "from": "agent",
+      "to": "tavily",
+      "label": "Live Web Query",
+      "fromSide": "bottom",
+      "toSide": "top"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Interactive Whiteboard Canvas",
+      "items": [
+        "Full-screen SVG whiteboard canvas with interactive ink drawing and responsive card layouts",
+        "Unified glassmorphic dock with dynamic live speech banner stacking prevents UI overlap",
+        "Bidirectional student pointer and target hit-testing for natural question asking"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Real-time Multimodal Voice Loop",
+      "items": [
+        "LiveKit Cloud WebRTC SFU provides sub-second bidirectional audio streaming",
+        "Google Gemini 3.8 Multimodal Live handles real-time conversational reasoning in Telugu and Indian languages",
+        "LiveKit DataChannels synchronize whiteboard operations ('nova-board') and student marks ('nova-student')"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Pedagogical Knowledge & Visuals",
+      "items": [
+        "VisualDirector coordinates pure SVG diagrams, flowcharts, hierarchies, and compositions",
+        "Tavily API provides real-time factual knowledge retrieval with fallback search archives",
+        "PostgreSQL (Neon) asynchronously tracks student attendance, lesson mastery, and progress analytics"
+      ]
+    }
+  ]
+}

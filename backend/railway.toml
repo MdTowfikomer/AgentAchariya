@@ -1,0 +1,9 @@
+[build]
+# The Dockerfile also downloads the voice models at build time, which a plain
+# Nixpacks build skips.
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+startCommand = "uv run src/agent.py start"
+restartPolicyType = "on_failure"
