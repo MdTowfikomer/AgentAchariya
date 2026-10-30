@@ -13,7 +13,7 @@
 export type Pointer = { name: string; index: number };
 export type TreeNode = { id: string; label: string; parent?: string };
 
-export type El =
+export type El = { conceptId?: string } & (
   | { id: string; kind: 'text'; text: string; label?: string }
   | { id: string; kind: 'code'; lines: string[]; lang?: string; label?: string }
   | { id: string; kind: 'array'; values: string[]; pointers?: Pointer[]; label?: string }
@@ -66,7 +66,7 @@ export type El =
   // A generated infographic or clip; the bytes arrive separately (topic nova-media).
   | { id: string; kind: 'media'; media: 'image' | 'video'; caption?: string; label?: string; image_role?: 'primary' | 'explanation'; image_topic?: string }
   // Nova's improvised handwritten note, pointing back at what it explains.
-  | { id: string; kind: 'note'; text: string; target?: string; label?: string };
+  | { id: string; kind: 'note'; text: string; target?: string; label?: string });
 
 export interface CheckpointOption {
   id: string;

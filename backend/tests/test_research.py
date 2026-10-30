@@ -82,7 +82,7 @@ async def test_missing_key_and_empty_results_fail_without_another_provider(monke
     ("simplify", "more simply"), ("example", "worked example"), ("check", "Wait for the student"),
 ])
 async def test_learning_action_uses_selected_board_and_language(action, expected):
-    session = SimpleNamespace(interrupt=Mock(), generate_reply=Mock())
+    session = SimpleNamespace(interrupt=AsyncMock(), generate_reply=Mock())
     board = SimpleNamespace(inventory=lambda: "Current board: Water cycle")
     images = SimpleNamespace(topic=lambda page: "", request=Mock())
     board.current = SimpleNamespace()

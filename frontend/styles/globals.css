@@ -132,6 +132,17 @@
   font-family: var(--font-commit-mono), ui-monospace, monospace;
 }
 
+.nova-action-feedback:empty { display: none; }
+
+/* Preserve comfortable touch targets while keeping desktop chrome compact. */
+@media (pointer: coarse) {
+  .nova-lesson-footer button,
+  .nova-lesson-footer select,
+  .nova-lesson-dock a { min-height: 44px; }
+  .nova-lesson-dock > button,
+  .nova-lesson-dock > a { min-width: 44px; }
+}
+
 /* Short landscape phone screens need space for the lesson, not tall chrome. */
 @media (max-height: 600px) and (orientation: landscape) and (pointer: coarse) {
   .nova-board-toolbar { padding: 4px 12px; gap: 8px; }
@@ -142,7 +153,6 @@
     gap: 4px;
     padding: 4px max(8px, env(safe-area-inset-right)) max(4px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
   }
-  .nova-action-feedback:empty { display: none; }
   .nova-lesson-dock {
     max-width: 100%;
     gap: 6px;

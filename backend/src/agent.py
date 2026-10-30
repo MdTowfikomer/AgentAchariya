@@ -12,12 +12,12 @@ from livekit.agents import AgentServer, JobContext, JobProcess, cli
 
 from board import LessonPlanner
 from board_session import run_board_session
-from config import validate_environment
+from config import LOCAL_ENV_FILE, validate_environment
 from locale_map import DEFAULT_PROFILE
 
 logger = logging.getLogger("agent")
 
-load_dotenv(".env.local")
+load_dotenv(LOCAL_ENV_FILE)
 validate_environment()
 
 server = AgentServer()

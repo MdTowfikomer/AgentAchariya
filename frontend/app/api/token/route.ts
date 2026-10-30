@@ -53,12 +53,13 @@ export async function POST(req: Request) {
     const lang = /(?:^|; )nova_lang=([a-z]{2})/.exec(cookie)?.[1] ?? 'en';
     // Set just before "continue chat": the agent waits for the old history.
     const resume = /(?:^|; )nova_resume=1/.test(cookie) ? '1' : '0';
+    const onboarding = /(?:^|; )nova_onboarding=1/.test(cookie) ? '1' : '0';
 
     const participantToken = await createParticipantToken(
       {
         identity: participantIdentity,
         name: participantName,
-        attributes: { language: lang, resume },
+        attributes: { language: lang, resume, onboarding },
       },
       roomName,
       apiKey,
@@ -102,6 +103,7 @@ function createParticipantToken(
     canPublish: true,
     canPublishData: true,
     canSubscribe: true,
+    canUpdateOwnMetadata: true,
   };
   at.addGrant(grant);
 

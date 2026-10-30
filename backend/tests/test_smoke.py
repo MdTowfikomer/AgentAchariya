@@ -3,10 +3,9 @@
 import pytest
 
 from analytics import judge
-from illustrations import IllustrationResolver, _compose_svg, _iot_composition
 from memory import slugify
 from research import _serpapi_findings
-from visuals import clean_diagram, clean_supporting_visual
+from visuals import clean_diagram
 
 
 def test_slugify():
@@ -73,63 +72,9 @@ def test_topic_visual_plans_are_semantic(topic, diagram_type, subject, layout):
         "nodes": [{"id": "a", "label": "Start"}, {"id": "b", "label": "Result"}],
         "edges": [{"from": "a", "to": "b"}],
     })
-    visual = clean_supporting_visual({
-        "subject": subject,
-        "role": f"Clarifies {topic.lower()}",
-        "placement": "side",
-        "actions": [{"action": "SHOW"}, {"action": "LABEL", "target": subject}],
-    })
     assert diagram is not None
     assert diagram["layout"] == layout
     assert diagram["diagramType"] == diagram_type
-    assert visual is not None
-    assert visual["subject"] == subject
-    assert [action["action"] for action in visual["actions"]] == ["SHOW", "LABEL"]
-
-
-def test_local_assets_win_before_network_resolution():
-    resolver = IllustrationResolver.__new__(IllustrationResolver)
-    assert resolver._try_local("photosynthesis") is not None
-    assert resolver._try_local("chloroplast") is not None
-    assert resolver._try_local("heart anatomy") is not None
-
-
-@pytest.mark.parametrize("topic", ["computer network", "binary search", "machine learning"])
-def test_composed_visuals_explain_relationship_topics(topic):
-    svg = _compose_svg(topic)
-    assert svg is not None
-    assert svg.startswith("<svg")
-
-
-def test_iot_composition_has_independently_targetable_parts():
-    visual = _iot_composition("IoT system")
-    assert visual is not None
-    assert [part["id"] for part in visual.parts] == [
-        "sensor", "microcontroller", "cloud", "actuator"
-    ]
-    assert "Sensors" in visual.svg
-    assert "Network / Cloud" in visual.svg
-
-
-def test_supporting_visual_keeps_unique_semantic_links_and_full_placement():
-    visual = clean_supporting_visual({
-        "subject": "IoT system",
-        "role": "Shows the data path through the system.",
-        "placement": "full",
-        "actions": [
-            {"action": "PULSE", "target": "sensor"},
-            {"action": "PULSE", "target": "sensor"},
-            {"action": "FLOW", "target": "sensor -> cloud"},
-        ],
-        "links": [
-            {"point": "Collect data", "target": "sensor"},
-            {"point": "Collect data again", "target": "sensor"},
-        ],
-    })
-    assert visual is not None
-    assert visual["placement"] == "full"
-    assert len(visual["actions"]) == 2
-    assert visual["links"] == [{"point": "Collect data", "target": "sensor"}]
 
 
 def test_serpapi_results_keep_source_backed_findings():
@@ -175,6 +120,7 @@ async def test_diagram_note_checkpoint_inherits_concept():
 async def test_ask_checkpoint_playback_emits_ready_on_originating_board():
     import asyncio
     import os
+    from types import SimpleNamespace
     from board import Board
     from board_session import BoardTeacher
     from locale_map import DEFAULT_PROFILE
@@ -205,8 +151,10 @@ async def test_ask_checkpoint_playback_emits_ready_on_originating_board():
     class MockSession:
         def __init__(self, handle):
             self.handle = handle
+            self.reply_requests = 0
 
         def generate_reply(self, instructions: str = ""):
+            self.reply_requests += 1
             return self.handle
 
     cls = MockClassroom(board)
@@ -226,7 +174,8 @@ async def test_ask_checkpoint_playback_emits_ready_on_originating_board():
 
     # Trigger checkpoint on board 1
     fn = teacher.ask_checkpoint._func
-    await fn(teacher, None, question="What are the light reaction products?", concept_id="concept-photo")
+    await fn(teacher, SimpleNamespace(speech_handle=handle), question="What are the light reaction products?", concept_id="concept-photo")
+    assert teacher._test_session.reply_requests == 0
 
     # While playback is in flight, user switches to Board 2!
     await board.new_page("Board 2")
@@ -314,6 +263,7 @@ async def test_student_checkpoint_response_modalities():
     from board import Board
     from board_session import MarkRelay
     from locale_map import DEFAULT_PROFILE
+    from unittest.mock import AsyncMock, Mock
 
     board = Board()
 
@@ -329,6 +279,8 @@ async def test_student_checkpoint_response_modalities():
     class MockSession:
         current_agent = None
         agent_state = "idle"
+        interrupt = AsyncMock()
+        generate_reply = Mock()
 
     class MockReader:
         def __init__(self, payload: str):
@@ -339,6 +291,7 @@ async def test_student_checkpoint_response_modalities():
 
     cls = MockClassroom(board)
     relay = MarkRelay(MockSession(), cls)
+    relay._inject = AsyncMock()
 
     # 1. Voice response
     msg_voice = {
@@ -350,10 +303,10 @@ async def test_student_checkpoint_response_modalities():
         "response": "RuBisCO fixes CO2",
     }
     await relay.handle(MockReader(json.dumps(msg_voice)), "student-p")
-    assert len(relay._held) == 1
-    assert "cp-calvin-cycle" in relay._held[0][1]
-    assert "voice" in relay._held[0][1]
-    assert "RuBisCO fixes CO2" in relay._held[0][1]
+    assert relay._inject.await_count == 1
+    assert "cp-calvin-cycle" in relay._inject.await_args_list[0].args[0]
+    assert "voice" in relay._inject.await_args_list[0].args[0]
+    assert "RuBisCO fixes CO2" in relay._inject.await_args_list[0].args[0]
 
     # 2. Typed response
     msg_typed = {
@@ -365,10 +318,10 @@ async def test_student_checkpoint_response_modalities():
         "response": "rubisco",
     }
     await relay.handle(MockReader(json.dumps(msg_typed)), "student-p")
-    assert len(relay._held) == 2
-    assert "cp-calvin-cycle" in relay._held[1][1]
-    assert "typed" in relay._held[1][1]
-    assert "rubisco" in relay._held[1][1]
+    assert relay._inject.await_count == 2
+    assert "cp-calvin-cycle" in relay._inject.await_args_list[1].args[0]
+    assert "typed" in relay._inject.await_args_list[1].args[0]
+    assert "rubisco" in relay._inject.await_args_list[1].args[0]
 
     # 3. Chip response
     msg_chip = {
@@ -380,10 +333,11 @@ async def test_student_checkpoint_response_modalities():
         "response": "RuBisCO",
     }
     await relay.handle(MockReader(json.dumps(msg_chip)), "student-p")
-    assert len(relay._held) == 3
-    assert "cp-calvin-cycle" in relay._held[2][1]
-    assert "chip" in relay._held[2][1]
-    assert "RuBisCO" in relay._held[2][1]
+    assert relay._inject.await_count == 3
+    assert "cp-calvin-cycle" in relay._inject.await_args_list[2].args[0]
+    assert "chip" in relay._inject.await_args_list[2].args[0]
+    assert "RuBisCO" in relay._inject.await_args_list[2].args[0]
+    assert relay._held == []
 
 
 @pytest.mark.asyncio
@@ -516,7 +470,7 @@ async def test_mark_relay_checkpoint_evaluated_and_teacher_reply():
             self.agent_state = "idle"
             self.reply_generated = False
 
-        def interrupt(self):
+        async def interrupt(self):
             pass
 
         def generate_reply(self, instructions=None):

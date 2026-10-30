@@ -682,7 +682,8 @@ class Board:
         page = page or self.current
         page.lesson = lesson
         page.revealed = 0
-        page.elements = {key: el for key, el in page.elements.items() if el.get("kind") == "media"}
+        page.elements = {key: el for key, el in page.elements.items()
+                         if el.get("kind") == "media"}
         if lesson.get("title"):
             page.title = lesson["title"]
         await self.publish({"op": "lesson", "lesson": lesson}, page)

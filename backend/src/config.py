@@ -5,8 +5,10 @@ from __future__ import annotations
 import logging
 import os
 import sys
+from pathlib import Path
 
 logger = logging.getLogger("agent.config")
+LOCAL_ENV_FILE = Path(__file__).resolve().parents[1] / ".env.local"
 
 REQUIRED_ENV_VARS = [
     ("GOOGLE_API_KEY", "Google Gemini API key running real-time voice, vision & reasoning."),

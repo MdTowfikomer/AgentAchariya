@@ -59,7 +59,7 @@ The diagram groups transport hops for readability: room data and byte streams tr
 5. `show_step` waits for planning if necessary, reveals a step, and returns descriptions and target addresses to the teacher. This step can wait; the entire drawing path is not latency-free.
 6. `Board.publish` sends small JSON operations on `nova-board`, scoped to a page.
 7. The browser applies operations with reducers, computes layout, and renders element components as SVG and supporting interactive content.
-8. Separately, final user transcripts trigger the Visual Director when the agent begins thinking/speaking. Filler utterances and repeated questions are skipped. It may suggest a diagram, supporting illustration, or topic-image request. It checks whether the question/page changed before applying results and avoids some duplicate visuals.
+8. Separately, final user transcripts trigger the Visual Director when the agent begins thinking/speaking. Filler utterances and repeated questions are skipped. It may suggest a structured diagram or optional topic-image request. It checks whether the question/page changed before applying results and avoids some duplicate visuals.
 
 ### Circle-to-ask
 
@@ -101,7 +101,6 @@ All paths in this section are relative to `backend/`.
 | `src/board.py` | Lesson JSON schemas and planner; repairs/normalizes model output; describes target elements; owns Python `Page` and `Board` state, page switching/restoration, element IDs, step reveal, array updates, and checkpoint data/evaluation. Publishes board events. |
 | `src/board_prompts.py` | Composes teacher identity, language behavior, teaching rules, board/tool use, checkpoint behavior, interruption handling, memory guidance, specialist instructions, and fresh/resume greetings. These are instructions to the model, not hard guarantees. |
 | `src/visuals.py` | Background visual planner. Requests structured diagram/supporting-visual plans and validates them. Maps richer diagram intentions into supported geometries such as flow, cycle, hub, timeline, layers, and comparison. Pixel layout is primarily computed in the frontend. |
-| `src/illustrations.py` | Resolves supporting SVG illustrations with caching. Tries a specialized IoT composition, local SVGs, Iconify, composed SVGs, and generated SVG fallback. Some compositions expose individually targetable parts. |
 | `src/media.py` | Optional Cloudflare image pipeline. Chooses overview vs follow-up image models, builds wordless image prompts, validates returned formats, caches results, limits work, rejects stale page/topic generations, streams bytes, and emits status/element events. Does not currently implement generated video. |
 | `src/research.py` | Queries SerpApi Google search in a background thread with timeouts, filters unusable/duplicate results, and returns source-backed excerpts. Handles provider errors without including key-bearing request URLs. Does not fetch and read full articles. |
 | `src/memory.py` | PostgreSQL connection pool and student fact persistence. Normalizes names into keys; stores facts in JSONB. Runs database coroutines on a dedicated daemon-thread event loop and bridges results back to the agent loop. Database absence/failure can disable persistence without stopping the class. |
@@ -110,9 +109,8 @@ All paths in this section are relative to `backend/`.
 | `src/locale_map.py` | Small immutable language/register profile. Default profile is Telugu/Telangana; the selected session language can come from participant attributes. |
 | `src/registers/te_telangana.md` | Telugu dialect/register guidance loaded into teacher prompts. |
 | `src/__init__.py` | Package marker. |
-| `src/assets/svg/*` | Reusable illustration source assets, resolved by `illustrations.py`. |
 | `scripts/preview_topic_images.py` | Standalone image-model preview utility; separate from starting a live teacher. |
-| `tests/test_smoke.py` | Local behavioral tests including pointer parsing, diagram normalization, semantic illustrations, checkpoint creation/playback, submissions, and answer evaluation. |
+| `tests/test_smoke.py` | Local behavioral tests including pointer parsing, diagram normalization, checkpoint creation/playback, submissions, and answer evaluation. |
 | `tests/test_media.py` | Image request deduplication, page/topic routing, stale work, failure isolation, and generation-related behavior. |
 | `tests/test_research.py` | Source normalization, error/key handling, missing provider configuration, and learning-action delivery. |
 | `pyproject.toml` | Python package/dependency definitions plus pytest and Ruff settings. |
@@ -327,7 +325,7 @@ These are boundaries of what the checked source supports, not requests to expand
 4. `backend/src/board.py`: schemas, planner, board state, operations.
 5. `frontend/components/nova/board/types.ts`, `board-state.ts`, and `board.tsx`: receiving those operations.
 6. `layout.ts`, `elements.tsx`, and `marks.ts`: drawing and referring to content.
-7. `visuals.py`, `media.py`, and `illustrations.py`: independent visual paths.
+7. `visuals.py` and `media.py`: structured diagram plans and optional background images. Raw SVG generation has been removed.
 8. `speech-tracker.ts` and checkpoint logic: speech/board coordination.
 9. `memory.py`, `analytics.py`, `research.py`, and corresponding APIs: persistence and external services.
 10. Tests for each subsystem: concrete edge cases the current implementation is designed to handle.

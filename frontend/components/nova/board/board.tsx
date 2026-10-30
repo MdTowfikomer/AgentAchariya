@@ -9,7 +9,7 @@ import { loadBoard, loadMedia, saveBoard, saveMedia } from './archive';
 import { BoardElement, INK, LiveSpeechCard, LiveSpeechContext, MediaActionContext, MediaContext, StepTitle } from './elements';
 import { activateConcept, createSpeechTrackingState, processSpeechLines } from './speech-tracker';
 import { type ImageEntry, visibleImageSteps } from './image-layout';
-import { type BoardLayout, HAND, findStepTarget, layoutBoard, targetRect, targetText } from './layout';
+import { type BoardLayout, HAND, findStepTarget, layoutBoard, targetRect, targetText, topicNote } from './layout';
 import { type Pt, bboxOf, hitTest, shapeOf, snapshotRegion } from './marks';
 import {
   type ResearchItem,
@@ -877,7 +877,7 @@ export function Board({
       const r = { x: 0, y: 0, w: layout.width, h: Math.max(Math.round((layout.width * 9) / 16), 400) };
       const dataUrl = await snapshotRegion(svgRef.current, r, 1920);
       if (dataUrl) {
-        pdf.addImage(dataUrl, 'PNG', 0, 0, 960, 540);
+        pdf.addImage(dataUrl, 'JPEG', 0, 0, 960, 540);
         pdf.save(`${baseTitle}-slides.pdf`);
       }
       return;
@@ -906,7 +906,7 @@ export function Board({
       if (i > 0) {
         pdf.addPage([960, 540], 'landscape');
       }
-      pdf.addImage(dataUrl, 'PNG', 0, 0, 960, 540);
+      pdf.addImage(dataUrl, 'JPEG', 0, 0, 960, 540);
       pdf.setFont('helvetica', 'normal');
       pdf.setFontSize(9);
       pdf.setTextColor(140, 130, 120);
@@ -1162,7 +1162,7 @@ export function Board({
                 {layout.steps.map((ps) => {
                   if (!ps.companionSlot) return null;
                   const isLatest = ps.conceptId === activeConceptId;
-                  const stepText = state.stepNotes?.[ps.conceptId] || ps.step.say || '';
+                  const stepText = topicNote(ps.step, state.stepNotes?.[ps.conceptId]);
                   const cpKey = checkpointKey(book.active, ps.conceptId);
                   const cpEntry = checkpointState.checkpoints[cpKey];
                   return (

@@ -18,6 +18,19 @@ import type { CheckpointEntry } from './board-state';
 export const HAND = '"Kalam", "Comic Sans MS", cursive';
 export const MONO = 'Consolas, ui-monospace, monospace';
 
+/** One summary per roadmap topic; live speech replaces the initial board summary. */
+export function topicNote(step: Step, spoken?: string): string {
+  if (spoken?.trim()) return spoken.trim();
+  if (step.say?.trim()) return step.say.trim();
+  return step.elements.flatMap((el) => {
+    if (el.kind === 'diagram') return el.nodes.map((node) =>
+      `${node.label}${node.description || node.note ? `: ${node.description || node.note}` : ''}`);
+    if (el.kind === 'text' || el.kind === 'note') return [el.text];
+    if (el.kind === 'list') return el.items;
+    return [];
+  }).join('\n');
+}
+
 const HAND_W = 0.5; // average glyph width / font size, handwriting face
 const MONO_W = 0.6;
 
@@ -326,15 +339,15 @@ function sizeEl(el: El, colW: number): Sized {
     case 'illustration': {
       const isComposition = (el.parts?.length ?? 0) >= 3;
       const wantsFull = el.placement === 'full';
-      const w = Math.min(wantsFull ? 640 : isComposition ? 460 : 240, colW);
+      const w = Math.min(wantsFull ? 400 : isComposition ? 460 : 240, colW);
       const labelH = el.label ? LABEL_H : 0;
-      const illusW = Math.min(wantsFull ? 600 : isComposition ? 430 : 200, w - 24);
-      const illusH = isComposition ? Math.round(illusW * 0.5) : illusW;
+      const illusW = Math.min(wantsFull ? 376 : isComposition ? 430 : 200, w - 24);
+      const viewBox = illustrationViewBox(el.svg);
+      const illusH = Math.round(illusW * viewBox.h / viewBox.w);
       const h = illusH + labelH + 16;
-      const sourceW = el.parts?.length ? Math.ceil(Math.max(...el.parts.map((part) => part.x + part.w)) / 100) * 100 : 200;
-      const scale = illusW / sourceW;
+      const scale = illusW / viewBox.w;
       const parts = Object.fromEntries((el.parts ?? []).map((part) => [part.id, {
-        x: (w - illusW) / 2 + part.x * scale, y: 8 + part.y * scale,
+        x: (w - illusW) / 2 + (part.x - viewBox.x) * scale, y: 8 + (part.y - viewBox.y) * scale,
         w: part.w * scale, h: part.h * scale,
       }]));
       return { w, h, parts, geom: { illusW, illusH, labelH } as IllustrationGeom };
@@ -350,6 +363,15 @@ export type ListGeom = {
 };
 export type MediaGeom = { labelH: number; mediaW: number; mediaH: number };
 export type IllustrationGeom = { illusW: number; illusH: number; labelH: number };
+
+export function illustrationViewBox(svg: string): Rect {
+  const raw = /\bviewBox\s*=\s*["']([^"']+)["']/i.exec(svg)?.[1];
+  const values = raw?.trim().split(/[\s,]+/).map(Number);
+  if (values?.length === 4 && values.every(Number.isFinite) && values[2] > 0 && values[3] > 0) {
+    return { x: values[0], y: values[1], w: values[2], h: values[3] };
+  }
+  return { x: 0, y: 0, w: 200, h: 200 };
+}
 
 function sizeList(items: string[], label: string | undefined, colW: number): Sized {
   const labelH = label ? LABEL_H : 0;
@@ -390,28 +412,8 @@ function nodeSize(n: DNode, fs: number) {
   return { w, h: n.note ? 64 : 50 };
 }
 
-function cardSize(n: DNode): { w: number; h: number } | null {
-  if (!n.description && (!n.bullets || n.bullets.length === 0)) return null;
-  const cardW = 280;
-  let h = 18; // top padding
-  h += 24; // numbered heading line
-  if (n.description) {
-    const descLines = Math.ceil(n.description.length / 32);
-    h += descLines * 18 + 6;
-  }
-  if (n.bullets && n.bullets.length > 0) {
-    h += 6; // gap before bullets
-    for (const b of n.bullets) {
-      const lines = Math.ceil(b.length / 30);
-      h += lines * 17 + 4;
-    }
-  }
-  h += 14; // bottom padding
-  return { w: cardW, h };
-}
-
 function sizeDiagram(el: Extract<El, { kind: 'diagram' }>, colW: number): Sized {
-  const labelH = el.label ? LABEL_H + 6 : 0;
+  const labelH = el.label ? 44 : 0;
   const fs = 17;
   const boxes: Record<string, Rect> = {};
   const nodes = el.nodes;
@@ -518,7 +520,6 @@ function sizeDiagram(el: Extract<El, { kind: 'diagram' }>, colW: number): Sized 
   // flow: layered top-to-bottom; a node sits one layer below the deepest node
   // pointing at it. Nodes with no edges at all get their own final row rather
   // than crowding the top.
-  const annotated = nodes.some((n) => n.description || (n.bullets && n.bullets.length > 0));
   const linked = new Set(el.edges.flatMap((e) => [e.from, e.to]));
   const layer: Record<string, number> = {};
   nodes.forEach((n) => (layer[n.id] = 0));
@@ -539,42 +540,6 @@ function sizeDiagram(el: Extract<El, { kind: 'diagram' }>, colW: number): Sized 
   const loose = nodes.filter((n) => !linked.has(n.id));
   if (loose.length) compact.push(loose);
 
-  if (annotated) {
-    // Annotated flow: nodes centered, info cards placed directly below each node
-    const cards: Record<string, { x: number; y: number; w: number; h: number; side: 'left' | 'right' }> = {};
-    let y = labelH;
-    let cardIdx = 0;
-    compact.forEach((row) => {
-      const sizes = row.map((n) => nodeSize(n, fs));
-      const gap = 28;
-      const total = sizes.reduce((a, s) => a + s.w, 0) + gap * (row.length - 1);
-      const k = total > colW ? colW / total : 1;
-      let x = (colW - total * k) / 2;
-      const nodeH = Math.max(...sizes.map((s) => s.h));
-      row.forEach((n, i) => {
-        const nw = sizes[i].w * k;
-        boxes[n.id] = { x, y, w: nw, h: sizes[i].h };
-        x += (nw + gap) * k;
-      });
-      y += nodeH + 12;
-
-      // Place info cards for nodes in this row, below the nodes
-      row.forEach((n) => {
-        const cs = cardSize(n);
-        if (cs) {
-          const side: 'left' | 'right' = cardIdx % 2 === 0 ? 'left' : 'right';
-          const cardW = Math.min(cs.w, colW);
-          const nodeBox = boxes[n.id];
-          const cardX = clamp(nodeBox.x + nodeBox.w / 2 - cardW / 2, 0, colW - cardW);
-          cards[n.id] = { x: cardX, y, w: cardW, h: cs.h, side };
-          cardIdx++;
-          y += cs.h + 10;
-        }
-      });
-      y += 46; // gap before next row's node
-    });
-    return done(y - 30, { cards, annotated: true });
-  }
 
   let y = labelH;
   compact.forEach((row) => {
@@ -746,17 +711,38 @@ export function layoutBoard(
   const isMobile = Boolean(viewportWidth && viewportWidth <= 640);
   const margin = isMobile ? 16 : 40;
   const gutter = isMobile ? 16 : 48;
-  const width = isMobile ? Math.max(320, viewportWidth!) : 1120;
+  const visibleSteps = steps.slice(0, revealed);
+  const isBackgroundImage = (step: Step) => step.id.startsWith('image-') &&
+    step.elements.length === 1 && step.elements[0].kind === 'media' &&
+    step.elements[0].media === 'image' && Boolean(step.elements[0].image_role);
+  // Use spare desktop space for generated images without changing lesson geometry.
+  const imageRail = Boolean(viewportWidth && viewportWidth >= 1200 && visibleSteps.some(isBackgroundImage));
+  const railW = 320;
+  const railOffset = imageRail ? railW + 28 : 0;
+  const lessonWidth = isMobile ? Math.max(320, viewportWidth!) : 1120;
+  const width = lessonWidth + railOffset;
   const activeCols = isMobile ? 1 : columns;
-  const colW = (width - margin * 2 - gutter * (activeCols - 1)) / activeCols;
+  const colW = (lessonWidth - margin * 2 - gutter * (activeCols - 1)) / activeCols;
   const colH: number[] = Array.from({ length: activeCols }, () => margin);
   const placedSteps: PlacedStep[] = [];
   const els: PlacedEl[] = [];
+  let imageY = margin;
 
-  steps.slice(0, revealed).forEach((step, si) => {
+  visibleSteps.forEach((step, si) => {
     const conceptId = step.conceptId || step.id;
+    if (imageRail && isBackgroundImage(step)) {
+      const el = step.elements[0];
+      const parent = placedSteps.find((placed) => placed.conceptId === conceptId);
+      const y = Math.max(imageY, parent?.y ?? margin);
+      const size = sizeEl(el, railW);
+      els.push({ el, step: si + 1, conceptId, order: 0, x: margin, y,
+        w: size.w, h: size.h, parts: size.parts, geom: size.geom });
+      placedSteps.push({ index: si + 1, step, conceptId, x: margin, y, w: railW, h: size.h });
+      imageY = y + size.h + 24;
+      return;
+    }
     const col = colH.indexOf(Math.min(...colH));
-    const x = margin + col * (colW + gutter);
+    const x = margin + railOffset + col * (colW + gutter);
     const y0 = colH[col];
     let y = y0 + (step.title ? TITLE_H + 12 : 0);
     // Classify elements into visuals, companion notes, and full-width elements
@@ -802,7 +788,7 @@ export function layoutBoard(
       (checkpoints && Object.values(checkpoints).find((c) => c.conceptId === conceptId));
 
     const mediaCaption = mediaEls.map((m) => (m.el as Extract<El, { kind: 'media' }>).caption).find(Boolean) || '';
-    const speechText = (stepNotes?.[conceptId] || step.say || mediaCaption || '').trim();
+    const speechText = topicNote(step, stepNotes?.[conceptId]) || mediaCaption;
     const hasCheck = Boolean(step.check?.trim() || liveCp?.question?.trim());
     const hasStructuredCheck = Boolean(
       liveCp?.options?.length ||
@@ -839,7 +825,7 @@ export function layoutBoard(
             step: si + 1,
             conceptId,
             order,
-            x,
+            x: el.kind === 'illustration' && el.placement === 'full' ? x + (colW - s.w) / 2 : x,
             y,
             w: s.w,
             h: s.h,
@@ -863,7 +849,7 @@ export function layoutBoard(
             step: si + 1,
             conceptId,
             order,
-            x,
+            x: el.kind === 'illustration' && el.placement === 'full' ? x + (colW - s.w) / 2 : x,
             y,
             w: s.w,
             h: s.h,
@@ -881,7 +867,7 @@ export function layoutBoard(
             step: si + 1,
             conceptId,
             order,
-            x: x + indent,
+            x: el.kind === 'illustration' && el.placement === 'full' ? x + (colW - s.w) / 2 : x + indent,
             y,
             w: s.w,
             h: s.h,
@@ -980,7 +966,7 @@ export function layoutBoard(
           step: si + 1,
           conceptId,
           order,
-          x,
+          x: el.kind === 'illustration' && el.placement === 'full' ? x + (colW - s.w) / 2 : x,
           y,
           w: s.w,
           h: s.h,
@@ -997,7 +983,7 @@ export function layoutBoard(
 
   return {
     width,
-    height: Math.max(...colH) + margin,
+    height: Math.max(...colH, imageRail ? imageY : 0) + margin,
     colW,
     steps: placedSteps,
     els,

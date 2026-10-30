@@ -852,8 +852,9 @@ describe('Speech tracking and slide isolation', () => {
         id: 'x1dia1',
         kind: 'diagram',
         conceptId: 'concept-x1dia1',
-        title: 'Photosynthesis Cycle',
-        nodes: [{ id: 'n1', label: 'Light', x: 10, y: 10 }],
+        label: 'Photosynthesis Cycle',
+        nodes: [{ id: 'n1', label: 'Light' }],
+        edges: [],
       };
 
       // 2. Frontend Board state receives add op
@@ -1012,8 +1013,9 @@ describe('Speech tracking and slide isolation', () => {
         id: 'x1dia1',
         kind: 'diagram',
         conceptId: 'concept-x1dia1',
-        title: 'Calvin Cycle',
-        nodes: [{ id: 'n1', label: 'RuBP Fixation', x: 20, y: 20 }],
+        label: 'Calvin Cycle',
+        nodes: [{ id: 'n1', label: 'RuBP Fixation' }],
+        edges: [],
       };
 
       let board = reduce(EMPTY, {

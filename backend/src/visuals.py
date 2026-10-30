@@ -44,7 +44,6 @@ TYPE_LAYOUT = {
     "network": "hub", "layers": "layers", "technical_diagram": "flow",
     "graph": "hub", "hierarchy": "layers",
 }
-VISUAL_ACTIONS = ["SHOW", "HIGHLIGHT", "LABEL", "CONNECT", "FLOW", "PULSE", "ZOOM", "ANIMATE"]
 COLORS = ["blue", "green", "orange", "pink", "purple", "yellow", "gray"]
 
 _S = types.Schema
@@ -116,24 +115,6 @@ DIAGRAM_SCHEMA = _S(
     required=["title", "layout", "nodes"],
 )
 
-SUPPORTING_VISUAL_SCHEMA = _S(
-    type="OBJECT",
-    properties={
-        "subject": _S(type="STRING", description="The specific teachable object, e.g. 'left ventricle', 'chloroplast', 'router'."),
-        "role": _S(type="STRING", description="What this visual clarifies. Never decoration."),
-        "placement": _S(type="STRING", enum=["side", "integrated", "below", "full"]),
-        "links": _S(type="ARRAY", description="Explanation point to semantic visual-part links; use real SVG component names.", items=_S(
-            type="OBJECT", properties={"point": _STR, "target": _STR}, required=["point", "target"]
-        )),
-        "actions": _S(type="ARRAY", items=_S(
-            type="OBJECT",
-            properties={"action": _S(type="STRING", enum=VISUAL_ACTIONS), "target": _STR, "label": _STR},
-            required=["action"],
-        )),
-    },
-    required=["subject", "role"],
-)
-
 DIRECTOR_SCHEMA = _S(
     type="OBJECT",
     properties={
@@ -154,16 +135,7 @@ DIRECTOR_SCHEMA = _S(
             required=["topic", "focus"],
         ),
         "diagram": DIAGRAM_SCHEMA,
-        "illustration_query": _S(
-            type="STRING",
-            description=(
-                "For physical/visual things (car, engine, heart, lightbulb, plant, cell, "
-                "circuit, building, molecule, organ, device), a short search query for an "
-                "SVG illustration icon. Use alongside diagram for richer visuals. "
-                "One or two words: 'lightbulb', 'car', 'plant cell', 'cpu chip'."
-            ),
-        ),
-        "supporting_visual": SUPPORTING_VISUAL_SCHEMA,
+
     },
     required=["skip"],
 )
@@ -211,18 +183,6 @@ The diagram renderer draws hand-drawn SVG on the whiteboard. Rules:
   This creates a rich annotated infographic — like a textbook diagram with
   callout boxes. Skip description/bullets only for quick "draw me a diagram"
   requests where the student just wants the shape, not the explanation.
-- SUPPORTING VISUAL: Add `supporting_visual` ONLY when a concrete visual helps
-  understand the topic. Its subject must be specific (not "science icon"),
-  role must say what it explains, placement is side/integrated/below/full, and
-  actions are a short ordered teaching sequence (SHOW, HIGHLIGHT, LABEL,
-  CONNECT, FLOW, PULSE, ZOOM, ANIMATE). Also set `illustration_query` to the
-  same concise subject for backwards compatibility. Do not add decoration.
-  For systems with connected components (IoT, networks, feedback systems), use
-  a composition subject such as "IoT system" rather than one component. Name
-  action targets after components and express flows as `sensor -> cloud`. Add
-  `links` from each explanation point to its relevant node/component. Prefer a
-  composed mini-diagram whenever relationships are the lesson; never use an
-  icon merely to fill space.
 - All text in English. Be accurate — no invented facts.
 """
 
@@ -302,43 +262,4 @@ def clean_diagram(d: dict | None) -> dict | None:
         "nodes": nodes,
         "edges": edges,
         "label": str(d.get("title") or "")[:48],
-    }
-
-
-def clean_supporting_visual(visual: dict | None, legacy_query: str = "") -> dict | None:
-    """Keep only a specific, instructional visual request from the director."""
-    visual = visual if isinstance(visual, dict) else {}
-    subject = str(visual.get("subject") or legacy_query or "").strip()
-    role = str(visual.get("role") or "").strip()
-    # A one-word generic decoration is not a visual plan. Legacy queries may
-    # supply the subject, but never bypass the instructional-role requirement.
-    generic = {"icon", "illustration", "graphic", "image", "science", "technology"}
-    if not subject or not role or subject.lower() in generic:
-        return None
-    actions = []
-    seen_actions: set[tuple[str, str]] = set()
-    for item in visual.get("actions") or []:
-        action = str(item.get("action") or "").upper()
-        target = str(item.get("target") or "")[:48]
-        key = (action, target.lower())
-        if action in VISUAL_ACTIONS and key not in seen_actions:
-            seen_actions.add(key)
-            actions.append({
-                "action": action,
-                **({"target": target} if target else {}),
-                **({"label": str(item["label"])[:48]} if item.get("label") else {}),
-            })
-    links = []
-    seen_targets: set[str] = set()
-    for item in visual.get("links") or []:
-        point, target = str(item.get("point") or "").strip(), str(item.get("target") or "").strip()
-        if point and target and target.lower() not in seen_targets:
-            seen_targets.add(target.lower())
-            links.append({"point": point[:64], "target": target[:48]})
-    return {
-        "subject": subject[:64],
-        "role": role[:120],
-        "placement": visual.get("placement") if visual.get("placement") in {"side", "integrated", "below", "full"} else "side",
-        "actions": actions[:5] or [{"action": "SHOW"}],
-        "links": links[:6],
     }

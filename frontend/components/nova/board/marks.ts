@@ -141,7 +141,10 @@ export async function snapshotRegion(
 ): Promise<string | undefined> {
   try {
     const clone = svg.cloneNode(true) as SVGSVGElement;
-    clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    // Use the XMLNS namespace; a plain attribute can serialize twice and make
+    // the SVG invalid XML when the browser loads it as an image.
+    clone.removeAttribute('xmlns');
+    clone.setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns', 'http://www.w3.org/2000/svg');
     clone.setAttribute('viewBox', `${r.x} ${r.y} ${r.w} ${r.h}`);
     const outH = Math.round((outW * r.h) / r.w);
     clone.setAttribute('width', String(outW));
@@ -180,23 +183,31 @@ export async function snapshotRegion(
       })
     );
     const xml = new XMLSerializer().serializeToString(clone);
+    const parsed = new DOMParser().parseFromString(xml, 'image/svg+xml');
+    if (parsed.querySelector('parsererror')) {
+      throw new Error(`Invalid snapshot SVG: ${parsed.querySelector('parsererror')?.textContent}`);
+    }
     const url = URL.createObjectURL(new Blob([xml], { type: 'image/svg+xml' }));
     const img = new Image();
-    await new Promise<void>((res, rej) => {
-      img.onload = () => res();
-      img.onerror = () => rej(new Error('snapshot render failed'));
-      img.src = url;
-    });
-    const canvas = document.createElement('canvas');
-    canvas.width = outW;
-    canvas.height = outH;
-    const ctx = canvas.getContext('2d')!;
-    ctx.fillStyle = '#FBFAF6';
-    ctx.fillRect(0, 0, outW, outH);
-    ctx.drawImage(img, 0, 0, outW, outH);
-    URL.revokeObjectURL(url);
-    return canvas.toDataURL('image/jpeg', 0.8);
-  } catch {
+    try {
+      await new Promise<void>((res, rej) => {
+        img.onload = () => res();
+        img.onerror = () => rej(new Error('snapshot render failed'));
+        img.src = url;
+      });
+      const canvas = document.createElement('canvas');
+      canvas.width = outW;
+      canvas.height = outH;
+      const ctx = canvas.getContext('2d')!;
+      ctx.fillStyle = '#FBFAF6';
+      ctx.fillRect(0, 0, outW, outH);
+      ctx.drawImage(img, 0, 0, outW, outH);
+      return canvas.toDataURL('image/jpeg', 0.8);
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  } catch (error) {
+    console.error('Board snapshot failed', { stepFilter, region: r, error });
     return undefined; // the targets alone still carry the question
   }
 }

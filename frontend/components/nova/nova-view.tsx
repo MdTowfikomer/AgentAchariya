@@ -18,6 +18,7 @@ import { clearArchive, loadBoard } from '@/components/nova/board/archive';
 import { Board } from '@/components/nova/board/board';
 import { CanvasErrorBoundary } from '@/components/nova/board/error-boundary';
 import { Canvas, type CanvasPayload } from '@/components/nova/canvas';
+import { TopicPicker } from '@/components/nova/topic-picker';
 import {
   LANGS,
   type Lang,
@@ -44,7 +45,7 @@ import {
  * the interface stays quiet — no hard contrast, no glow, nothing shouting.
  */
 
-type Screen = 'ready' | 'connecting' | 'live' | 'ended' | 'mic-error';
+type Screen = 'ready' | 'topic' | 'connecting' | 'live' | 'ended' | 'mic-error';
 
 // Comfort palette — muted, warm, low-contrast.
 const C = {
@@ -189,13 +190,13 @@ function Mark({ tint = C.clay, pulse = false }: { tint?: string; pulse?: boolean
 
 /** Soft rounded bars. Calm when idle, lively when the agent speaks. */
 function Bars({ tint, active }: { tint: string; active: boolean }) {
-  const heights = [16, 30, 42, 30, 16];
+  const heights = [8, 15, 22, 15, 8];
   return (
-    <div className="flex h-14 items-center justify-center gap-2">
+    <div className="flex h-6 items-center justify-center gap-1">
       {heights.map((h, i) => (
         <motion.span
           key={i}
-          className="w-2.5 rounded-full"
+          className="w-1.5 rounded-full"
           style={{ background: tint, opacity: active ? 0.9 : 0.28 }}
           animate={
             active ? { height: [h * 0.45, h, h * 0.55, h * 0.9, h * 0.45] } : { height: h * 0.4 }
@@ -492,6 +493,8 @@ function ControlButton({
 
 function LiveScreen({
   chatId,
+  initialTopic,
+  onTopicError,
   resume,
   onHome,
   onNewChat,
@@ -501,6 +504,8 @@ function LiveScreen({
   handoffs,
 }: {
   chatId: string;
+  initialTopic: string | null;
+  onTopicError: () => void;
   resume: Chat | null;
   onHome: () => void;
   onNewChat: () => void;
@@ -512,6 +517,14 @@ function LiveScreen({
   const agent = useAgent();
   const session = useSessionContext();
   const tr = useT();
+  const { lang } = useContext(LangContext);
+  // Board's child effects subscribe before this effect publishes the topic.
+  // Attributes also reach an agent that finishes joining after the selection.
+  useEffect(() => {
+    if (!initialTopic || !session.room || !session.isConnected) return;
+    void session.room.localParticipant.setAttributes({ lesson_topic: initialTopic, language: lang })
+      .catch(onTopicError);
+  }, [initialTopic, session.room, session.isConnected, lang, onTopicError]);
 
   const [activeBoard, setActiveBoard] = useState('b1');
   const [sendingAction, setSendingAction] = useState(false);
@@ -748,7 +761,7 @@ function LiveScreen({
 
       {/* Reserved Dock Viewport Footer (never overlays whiteboard canvas; respects safe areas) */}
       <footer
-        className="nova-lesson-footer shrink-0 z-40 flex flex-col items-center gap-1.5 w-full px-4 pt-1.5 pb-[max(0.6rem,env(safe-area-inset-bottom))] border-t backdrop-blur-xl"
+        className="nova-lesson-footer shrink-0 z-40 flex flex-col items-center gap-1 w-full px-3 pt-1 pb-[max(0.25rem,env(safe-area-inset-bottom))] border-t backdrop-blur-xl"
         style={{
           backgroundColor: `${t.paper}FA`,
           borderColor: t.edge,
@@ -759,7 +772,7 @@ function LiveScreen({
           <div
             role="group"
             aria-label={tr.learningActions}
-            className="flex flex-wrap justify-center gap-2"
+            className="flex flex-wrap justify-center gap-1.5"
           >
             {([
               ['simplify', tr.explainSimply],
@@ -771,7 +784,7 @@ function LiveScreen({
                 type="button"
                 onClick={() => void requestLearningAction(action)}
                 disabled={sendingAction || !session.isConnected || !agent.isConnected || !(latestAgentSpeech || previous.some((line) => !line.mine))}
-                className="min-h-9 rounded-xl border px-3 py-1.5 text-[12px] font-medium transition-colors hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                className="min-h-8 rounded-xl border px-3 py-1 text-[12px] font-medium transition-colors hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 style={{ background: t.card, borderColor: t.edge, color: C.ink, outlineColor: C.ink }}
               >
                 {label}
@@ -785,11 +798,11 @@ function LiveScreen({
 
         {/* Dock Controls */}
         <div
-          className="nova-lesson-dock flex items-center gap-2.5 px-4 py-2 rounded-full shadow-lg backdrop-blur-xl border"
+          className="nova-lesson-dock flex max-w-full items-center gap-2 px-3 py-1 rounded-full shadow-lg backdrop-blur-xl border"
           style={{
             backgroundColor: `${t.card}EE`,
             borderColor: t.edge,
-            boxShadow: '0 8px 24px -4px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.04)',
+            boxShadow: '0 2px 8px rgba(74,64,56,0.06)',
           }}
         >
           {/* Teacher avatar & name */}
@@ -819,7 +832,7 @@ function LiveScreen({
             <span className="text-[12px] font-semibold hidden md:inline" style={{ color: status.tint }}>
               {tr[status.key]}
             </span>
-            <div className="nova-dock-waveform scale-75 origin-center">
+            <div className="nova-dock-waveform">
               <Bars
                 tint={state === 'thinking' ? t.accent : status.tint}
                 active={state === 'speaking' || state === 'listening'}
@@ -1065,10 +1078,15 @@ export function NovaView() {
 
 function NovaViewInner() {
   const session = useSessionContext();
+  const liveAgent = useAgent();
   const { connectionState, isConnected, start, end } = session;
   const { messages } = useSessionMessages(session);
 
   const [micError, setMicError] = useState<MicError | null>(null);
+  const [choosingTopic, setChoosingTopic] = useState(false);
+  const [initialTopic, setInitialTopic] = useState<string | null>(null);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
+  const starting = useRef(false);
   const [hasEnded, setHasEnded] = useState(false);
   const [turns, setTurns] = useState(0);
   const [canvas, setCanvas] = useState<CanvasPayload[]>([]);
@@ -1149,17 +1167,24 @@ function NovaViewInner() {
   // Start a class: a brand-new chat, or (with `chat`) continue an old one.
   const startClass = useCallback(
     async (chat: Chat | null) => {
+      if (starting.current) return;
+      starting.current = true;
       setMicError(null);
+      setConnectionError(null);
       const err = await requestMic();
       if (err) {
         setMicError(err);
+        starting.current = false;
         return;
       }
       setHasEnded(false);
+      setInitialTopic(null);
+      setChoosingTopic(!chat);
       setResume(chat);
       setChatId(chat ? chat.id : `c${Date.now()}`);
       // The token route reads this to tell the agent to wait for the history.
       document.cookie = `nova_resume=${chat ? 1 : 0}; path=/; max-age=60; samesite=lax`;
+      document.cookie = `nova_onboarding=${chat ? 0 : 1}; path=/; max-age=60; samesite=lax`;
       setCanvas([]);
       setHandoffs([]);
       setAgentId({
@@ -1169,7 +1194,13 @@ function NovaViewInner() {
         tint: C.clay,
         lang: 'English',
       });
-      await start();
+      try {
+        await start();
+      } catch {
+        setConnectionError('Could not join the classroom. Please try again.');
+      } finally {
+        starting.current = false;
+      }
     },
     [start]
   );
@@ -1185,8 +1216,29 @@ function NovaViewInner() {
 
   const handleHome = useCallback(async () => {
     goingHome.current = true;
+    setChoosingTopic(false);
+    setInitialTopic(null);
+    setConnectionError(null);
     await end();
   }, [end]);
+
+  const handleTopicError = useCallback(() => {
+    setInitialTopic(null);
+    setChoosingTopic(true);
+    setConnectionError('Could not send your topic. Please reconnect and try again.');
+  }, []);
+
+  const retryConnection = useCallback(async () => {
+    goingHome.current = true;
+    await end();
+    await startClass(null);
+  }, [end, startClass]);
+
+  useEffect(() => {
+    if (!choosingTopic) return;
+    const timer = setTimeout(() => setConnectionError('This classroom has been waiting a while. Reconnect to start your lesson.'), 150_000);
+    return () => clearTimeout(timer);
+  }, [choosingTopic]);
 
   const handleNewChat = useCallback(async () => {
     restarting.current = true;
@@ -1195,6 +1247,7 @@ function NovaViewInner() {
 
   let screen: Screen = 'ready';
   if (micError) screen = 'mic-error';
+  else if (choosingTopic) screen = 'topic';
   else if (isConnected) screen = 'live';
   else if (connectionState === ConnectionState.Connecting) screen = 'connecting';
   else if (hasEnded) screen = 'ended';
@@ -1203,10 +1256,15 @@ function NovaViewInner() {
     <AnimatePresence mode="wait">
       <motion.div key={screen} {...FADE}>
         {screen === 'ready' && <ReadyScreen onStart={handleStart} onOpen={handleContinue} />}
+        {screen === 'topic' && <TopicPicker connected={isConnected && liveAgent.isConnected} error={connectionError}
+          onChoose={(topic) => { setInitialTopic(topic); setChoosingTopic(false); }}
+          onCancel={handleHome} onRetry={retryConnection} />}
         {screen === 'connecting' && <ConnectingScreen />}
         {screen === 'live' && (
           <LiveScreen
             chatId={chatId}
+            initialTopic={initialTopic}
+            onTopicError={handleTopicError}
             resume={resume}
             onHome={handleHome}
             onNewChat={handleNewChat}

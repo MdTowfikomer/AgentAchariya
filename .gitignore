@@ -28,6 +28,8 @@ dist/
 
 # --- Tool caches --------------------------------------------------------------
 .pytest_cache/
+pytest-cache-files-*/
+.archify/
 .ruff_cache/
 .mypy_cache/
 .turbo/

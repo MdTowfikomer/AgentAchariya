@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useMemo } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useT } from '../i18n';
+import { illustrationViewBox } from './layout';
 import type { CheckpointOption, Rect, Step } from './types';
 import { normalizeOptions, type CheckpointEntry } from './board-state';
 import type {
@@ -1102,12 +1103,14 @@ function DiagramNode({
   seed,
   fs,
   band,
+  plain,
 }: {
   n: { id: string; label: string; icon?: string; note?: string; color?: string; description?: string; bullets?: string[] };
   r: { x: number; y: number; w: number; h: number };
   seed: string;
   fs: number;
   band?: boolean;
+  plain?: boolean;
 }) {
   const p = paint(n.color);
   const text = `${n.icon ? n.icon + ' ' : ''}${n.label}`;
@@ -1117,8 +1120,8 @@ function DiagramNode({
     <g>
       <path
         d={band ? sketchRect(r.x, r.y, r.w, r.h, seed) : sketchPill(r.x, r.y, r.w, r.h, seed)}
-        fill={p.fill}
-        stroke={p.stroke}
+        fill={plain ? "#FFFDFA" : p.fill}
+        stroke={plain ? INK.ink : p.stroke}
         strokeWidth={2}
       />
       <text
@@ -1144,157 +1147,6 @@ function DiagramNode({
           {n.note}
         </text>
       )}
-    </g>
-  );
-}
-
-function InfoCard({
-  n,
-  card,
-  index,
-  nodeRect,
-  seed,
-}: {
-  n: { id: string; label: string; icon?: string; color?: string; description?: string; bullets?: string[] };
-  card: { x: number; y: number; w: number; h: number; side: 'left' | 'right' };
-  index: number;
-  nodeRect: { x: number; y: number; w: number; h: number };
-  seed: string;
-}) {
-  const p = paint(n.color);
-  const pad = 16;
-
-  // Dashed connector line from card top to node bottom
-  const connX = nodeRect.x + nodeRect.w / 2;
-  const connFromY = card.y;
-  const connToY = nodeRect.y + nodeRect.h;
-
-  // Word-wrap helper
-  const wrapText = (text: string, maxChars: number): string[] => {
-    const words = text.split(' ');
-    const lines: string[] = [];
-    let line = '';
-    for (const w of words) {
-      if (line && line.length + w.length + 1 > maxChars) {
-        lines.push(line);
-        line = w;
-      } else {
-        line = line ? line + ' ' + w : w;
-      }
-    }
-    if (line) lines.push(line);
-    return lines;
-  };
-
-  // Pre-compute all text positions
-  const items: { type: 'heading' | 'desc' | 'bullet'; lines: string[]; y: number; bulletIdx?: number }[] = [];
-  let ty = card.y + pad;
-
-  // Heading
-  items.push({ type: 'heading', lines: [`${index + 1}. ${n.icon ? n.icon + ' ' : ''}${n.label}`], y: ty });
-  ty += 24;
-
-  // Description
-  if (n.description) {
-    const lines = wrapText(n.description, 32);
-    items.push({ type: 'desc', lines, y: ty });
-    ty += lines.length * 17 + 6;
-  }
-
-  // Bullets
-  if (n.bullets && n.bullets.length > 0) {
-    ty += 4;
-    n.bullets.forEach((b, bi) => {
-      const lines = wrapText(b, 30);
-      items.push({ type: 'bullet', lines, y: ty, bulletIdx: bi });
-      ty += lines.length * 16 + 5;
-    });
-  }
-
-  return (
-    <g>
-      {/* Dashed connector */}
-      <path
-        d={sketchLine(connX, connToY, connX, connFromY, `${seed}-conn`, 0.6)}
-        stroke={p.stroke}
-        strokeWidth={1.5}
-        strokeDasharray="6 4"
-        fill="none"
-        opacity={0.6}
-      />
-      <circle cx={connX} cy={connFromY} r={4} fill={p.stroke} opacity={0.5} />
-
-      {/* Card background — hand-drawn border */}
-      <path
-        d={sketchRect(card.x, card.y, card.w, card.h, `${seed}-card`)}
-        fill={`${p.fill}88`}
-        stroke={p.stroke}
-        strokeWidth={1.8}
-      />
-      {/* Left color accent bar */}
-      <rect
-        x={card.x}
-        y={card.y + 8}
-        width={4}
-        height={card.h - 16}
-        rx={2}
-        fill={p.stroke}
-        opacity={0.7}
-      />
-
-      {items.map((item, i) => {
-        if (item.type === 'heading') {
-          return (
-            <text
-              key={i}
-              x={card.x + pad}
-              y={item.y + 15}
-              fontFamily={HAND}
-              fontSize={16}
-              fontWeight={700}
-              fill={INK.ink}
-            >
-              {item.lines[0]}
-            </text>
-          );
-        }
-        if (item.type === 'desc') {
-          return (
-            <g key={i}>
-              {item.lines.map((ln, j) => (
-                <text
-                  key={j}
-                  x={card.x + pad}
-                  y={item.y + j * 17 + 13}
-                  fontFamily={HAND}
-                  fontSize={13}
-                  fill={INK.soft}
-                >
-                  {ln}
-                </text>
-              ))}
-            </g>
-          );
-        }
-        // bullet
-        return (
-          <g key={i}>
-            <circle cx={card.x + pad + 4} cy={item.y + 10} r={3.5} fill={p.stroke} />
-            {item.lines.map((ln, j) => (
-              <text
-                key={j}
-                x={card.x + pad + 14}
-                y={item.y + j * 16 + 13}
-                fontFamily={HAND}
-                fontSize={12.5}
-                fill={INK.ink}
-              >
-                {ln}
-              </text>
-            ))}
-          </g>
-        );
-      })}
     </g>
   );
 }
@@ -1446,8 +1298,7 @@ function DiagramEl({ pe }: { pe: PlacedEl }) {
               strokeWidth={1.9}
               strokeLinecap="round"
             />
-            {/* 60 FPS animated SVG flow pulse */}
-            <path
+            {g.layout === 'cycle' && <path
               d={`M${p1.x},${p1.y} Q${mx},${my} ${p2.x},${p2.y}`}
               fill="none"
               stroke={g.layout === 'cycle' ? '#E05D38' : '#3B82F6'}
@@ -1462,7 +1313,7 @@ function DiagramEl({ pe }: { pe: PlacedEl }) {
                 dur={g.layout === 'cycle' ? '1.3s' : '1.8s'}
                 repeatCount="indefinite"
               />
-            </path>
+            </path>}
             <path
               d={arrowHead(p2.x, p2.y, ang, 9)}
               fill="none"
@@ -1486,26 +1337,12 @@ function DiagramEl({ pe }: { pe: PlacedEl }) {
             seed={`${pe.el.id}-${n.id}`}
             fs={hub && n.id === hub.id ? g.fs + 2 : g.fs}
             band={g.layout === 'layers'}
+            plain={g.layout === 'flow'}
           />
         );
       })}
 
-      {g.cards &&
-        el.nodes.map((n, i) => {
-          const card = g.cards?.[n.id];
-          const nodeRect = g.boxes[n.id];
-          if (!card || !nodeRect) return null;
-          return (
-            <InfoCard
-              key={`card-${n.id}`}
-              n={n}
-              card={card}
-              index={i}
-              nodeRect={nodeRect}
-              seed={`${pe.el.id}-${n.id}`}
-            />
-          );
-        })}
+
     </>
   );
 }
@@ -1770,15 +1607,15 @@ function IllustrationEl({ pe }: { pe: PlacedEl }) {
   const actions = el.actions ?? [{ action: 'SHOW' as const }];
   const has = (action: string) => actions.some((item) => item.action === action);
   const parts = el.parts ?? [];
-  const sourceW = parts.length ? Math.ceil(Math.max(...parts.map((part) => part.x + part.w)) / 100) * 100 : 200;
-  const scale = g.illusW / sourceW;
+  const viewBox = illustrationViewBox(el.svg);
+  const scale = g.illusW / viewBox.w;
   const partFor = (target?: string) => {
     const key = (target ?? '').trim().toLowerCase();
     return parts.find((part) => part.id.toLowerCase() === key || part.label.toLowerCase() === key);
   };
   const pointFor = (part: NonNullable<ReturnType<typeof partFor>>) => ({
-    x: pad + (part.x + part.w / 2) * scale,
-    y: 8 + (part.y + part.h / 2) * scale,
+    x: pad + (part.x - viewBox.x + part.w / 2) * scale,
+    y: 8 + (part.y - viewBox.y + part.h / 2) * scale,
   });
   const actionText = actions
     .filter((item) => item.action !== 'SHOW')
@@ -1795,7 +1632,7 @@ function IllustrationEl({ pe }: { pe: PlacedEl }) {
         strokeWidth={1.5}
       />
       {/* SVG illustration rendered inside */}
-      <g transform={`translate(${pad}, 8) scale(${scale})`}>
+      <g transform={`translate(${pad}, 8) scale(${scale}) translate(${-viewBox.x}, ${-viewBox.y})`}>
         <motion.g
           animate={has('ZOOM') || has('ANIMATE') ? { scale: [0.96, 1, 0.98, 1] } : { scale: 1 }}
           transition={{ duration: 2.4, repeat: has('ANIMATE') ? Infinity : 0, ease: 'easeInOut' }}
@@ -1805,8 +1642,8 @@ function IllustrationEl({ pe }: { pe: PlacedEl }) {
       {actions.map((action, index) => {
         const part = partFor(action.target);
         if (!part || !['HIGHLIGHT', 'PULSE', 'LABEL', 'ZOOM'].includes(action.action)) return null;
-        const x = pad + part.x * scale;
-        const y = 8 + part.y * scale;
+        const x = pad + (part.x - viewBox.x) * scale;
+        const y = 8 + (part.y - viewBox.y) * scale;
         const w = part.w * scale;
         const h = part.h * scale;
         return (
